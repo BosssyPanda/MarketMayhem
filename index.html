@@ -66,6 +66,23 @@
     .topics { display: flex; flex-wrap: wrap; gap: 10px; }
     .topic { background: var(--panel-2); border: 1px solid var(--border); border-radius: 999px; padding: 8px 16px; color: var(--ink); font-size: 14px; }
     .rule { color: var(--accent); font-weight: 600; }
+    .copybar {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 10px 14px; background: #0a0f18; border-bottom: 1px solid var(--border);
+    }
+    .copybar .label { color: var(--muted); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+    .copybtn {
+      appearance: none; cursor: pointer; font: inherit; font-size: 13px; font-weight: 600;
+      color: #05080e; background: var(--accent); border: 0; border-radius: 8px; padding: 7px 16px;
+      transition: background .15s ease, transform .05s ease;
+    }
+    .copybtn:hover { background: #2ee08c; }
+    .copybtn:active { transform: translateY(1px); }
+    .copybtn.copied { background: var(--accent-2); color: #05080e; }
+    .copycard { cursor: pointer; }
+    .copycard:hover { border-color: var(--accent); }
+    .copycard pre { cursor: pointer; }
+    .hint { color: var(--muted); font-size: 13px; margin-top: 10px; }
     footer { margin-top: 56px; text-align: center; color: var(--muted); font-size: 13px; }
   </style>
 </head>
@@ -106,12 +123,29 @@
 
     <section>
       <h2>Run it locally</h2>
-      <div class="terminal">
-        <div class="term-bar"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div>
-        <pre><span class="m"># Compile and run — that is the whole setup</span>
-<span class="c">javac</span> MarketMayhem.java
-<span class="c">java</span> MarketMayhem</pre>
+      <p class="lead">Tap a command to copy it, then paste it into your terminal to play.</p>
+
+      <div class="terminal copycard" data-copy="javac MarketMayhem.java && java MarketMayhem"
+           role="button" tabindex="0" aria-label="Copy the compile and run command">
+        <div class="copybar">
+          <span class="label"># In the project folder &mdash; compile &amp; play</span>
+          <button type="button" class="copybtn">Copy</button>
+        </div>
+        <pre><span class="c">javac</span> MarketMayhem.java <span class="m">&amp;&amp;</span> <span class="c">java</span> MarketMayhem</pre>
       </div>
+
+      <p class="hint">Don't have the files yet? Copy this to clone, build, and play in one go
+      (it skips the clone if the folder already exists):</p>
+
+      <div class="terminal copycard" data-copy="git clone https://github.com/BosssyPanda/MarketMayhem.git 2>/dev/null; cd MarketMayhem && javac MarketMayhem.java && java MarketMayhem"
+           role="button" tabindex="0" aria-label="Copy the clone, compile, and run command">
+        <div class="copybar">
+          <span class="label"># Fresh machine &mdash; clone, build &amp; play</span>
+          <button type="button" class="copybtn">Copy</button>
+        </div>
+        <pre><span class="c">git</span> clone https://github.com/BosssyPanda/MarketMayhem.git <span class="m">2&gt;/dev/null;</span> <span class="c">cd</span> MarketMayhem <span class="m">&amp;&amp;</span> <span class="c">javac</span> MarketMayhem.java <span class="m">&amp;&amp;</span> <span class="c">java</span> MarketMayhem</pre>
+      </div>
+
       <p class="lead" style="margin-top:12px">Beginner Java only — no <code class="inline">ArrayList</code>,
       <code class="inline">HashMap</code>, streams, lambdas, sorting libraries, or <code class="inline">java.util.Random</code>.
       One file, one <code class="inline">Scanner</code>, integers parsed by hand.</p>
@@ -173,5 +207,60 @@ Choose an option: </pre>
       Market Mayhem: Java Trading Academy &middot; a single-file terminal Java game &middot; learn by playing.
     </footer>
   </div>
+
+  <script>
+    (function () {
+      function flash(btn, ok) {
+        if (!btn) return;
+        btn.textContent = ok ? "Copied!" : "Press Ctrl+C";
+        btn.classList.add("copied");
+        setTimeout(function () {
+          btn.textContent = "Copy";
+          btn.classList.remove("copied");
+        }, 1600);
+      }
+
+      function fallbackCopy(text) {
+        var ta = document.createElement("textarea");
+        ta.value = text;
+        ta.setAttribute("readonly", "");
+        ta.style.position = "absolute";
+        ta.style.left = "-9999px";
+        document.body.appendChild(ta);
+        ta.select();
+        var ok = false;
+        try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+        document.body.removeChild(ta);
+        return ok;
+      }
+
+      function copyFrom(card) {
+        var text = card.getAttribute("data-copy");
+        var btn = card.querySelector(".copybtn");
+        if (!text) return;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(
+            function () { flash(btn, true); },
+            function () { flash(btn, fallbackCopy(text)); }
+          );
+        } else {
+          flash(btn, fallbackCopy(text));
+        }
+      }
+
+      var cards = document.querySelectorAll(".copycard");
+      for (var i = 0; i < cards.length; i++) {
+        (function (card) {
+          card.addEventListener("click", function () { copyFrom(card); });
+          card.addEventListener("keydown", function (e) {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              copyFrom(card);
+            }
+          });
+        })(cards[i]);
+      }
+    })();
+  </script>
 </body>
 </html>
