@@ -37,17 +37,17 @@ interface PlaybackRun {
 
 export default function Page() {
   const [catalog, setCatalog] = useState<ObjectiveCatalog>(FALLBACK_CATALOG);
-  const [farmState, setFarmState] = useState<FarmState>(() => loadFarmState(FALLBACK_CATALOG.objectives[0].id));
+  const [storageReady, setStorageReady] = useState(false);
+  const [farmState, setFarmState] = useState<FarmState>(() => createDefaultFarmState(FALLBACK_CATALOG.objectives[0].id));
   const [result, setResult] = useState<RunResponse | null>(null);
   const [playback, setPlayback] = useState<PlaybackRun | null>(null);
   const [index, setIndex] = useState(-1);
   const [running, setRunning] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [codeDrafts, setCodeDrafts] = useState<Record<string, string>>(() => {
-    const initialFarmState = loadFarmState(FALLBACK_CATALOG.objectives[0].id);
-    const initialObjective = resolveObjective(FALLBACK_CATALOG, initialFarmState.currentObjectiveId);
+    const initialObjective = FALLBACK_CATALOG.objectives[0];
     return {
-      [initialObjective.id]: extractStrategyEditableSource(loadStrategyCode(initialObjective.id, initialObjective.starter)),
+      [initialObjective.id]: extractStrategyEditableSource(initialObjective.starter),
     };
   });
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -57,6 +57,24 @@ export default function Page() {
       clearInterval(timer.current);
       timer.current = null;
     }
+  }, []);
+
+  useEffect(() => {
+    let alive = true;
+    queueMicrotask(() => {
+      if (!alive) return;
+      const persistedFarmState = loadFarmState(FALLBACK_CATALOG.objectives[0].id);
+      const persistedObjective = resolveObjective(FALLBACK_CATALOG, persistedFarmState.currentObjectiveId);
+      setFarmState(persistedFarmState);
+      setCodeDrafts((drafts) => ({
+        ...drafts,
+        [persistedObjective.id]: extractStrategyEditableSource(loadStrategyCode(persistedObjective.id, persistedObjective.starter)),
+      }));
+      setStorageReady(true);
+    });
+    return () => {
+      alive = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -91,8 +109,8 @@ export default function Page() {
   const renderFarmState = playback?.baseFarmState ?? farmState;
   const state = useMemo(() => deriveState(renderFarmState, frames, index), [renderFarmState, frames, index]);
   useEffect(() => {
-    saveFarmState(farmState);
-  }, [farmState]);
+    if (storageReady) saveFarmState(farmState);
+  }, [farmState, storageReady]);
 
   const runCode = useCallback(async () => {
     const submittedFarmState = farmState;
