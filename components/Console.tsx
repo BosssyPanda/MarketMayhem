@@ -9,7 +9,7 @@ export default function ConsolePanel({ result }: { result: RunResponse | null })
   if (!result) {
     body = "Press Run to execute your Strategy.";
   } else if (!result.compiled) {
-    body = result.compileErrors || "Compilation failed.";
+    body = result.compileErrors || result.runtimeError || "Compilation failed.";
     tone = "error";
   } else if (result.runtimeError) {
     body = result.runtimeError;

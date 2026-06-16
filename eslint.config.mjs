@@ -8,6 +8,7 @@ const ignored = {
     "node_modules/**",
     "next-env.d.ts",
     "coverage/**",
+    "animation-for-game-development/**",
   ],
 };
 

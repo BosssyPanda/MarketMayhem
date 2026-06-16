@@ -15,7 +15,7 @@ public class Objectives {
                 "A method call has parentheses: drone.moveEast();",
                 "Plant tiles (1,0), (2,0), and (3,0)."
             },
-            "public class Strategy {\n    public void run(Drone drone, Farm farm) {\n        drone.moveEast();\n        drone.plant(Crop.WHEAT);\n        drone.watch(\"planted\", 1);\n    }\n}\n",
+            "public class Strategy {\n    public void run(Drone drone, Farm farm) {\n        for (int i = 0; i < 3; i++) {\n            drone.moveEast();\n            drone.plant(Crop.WHEAT);\n            drone.watch(\"planted\", i + 1);\n        }\n    }\n}\n",
             "basic-planting",
             6, 4, "", 0, new int[0], new String[0], new int[0]
         ),

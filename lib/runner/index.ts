@@ -10,8 +10,8 @@ export interface JavaRunner {
 
 export function getRunner(): JavaRunner {
   const mode = process.env.FARM_BOTS_RUNNER;
-  if (process.env.NODE_ENV === "production" && (mode === "local" || mode === "mock")) {
-    throw new Error(`Production cannot use FARM_BOTS_RUNNER=${mode} for untrusted Java code. Use sandbox or leave FARM_BOTS_RUNNER unset.`);
+  if (process.env.VERCEL === "1" && (mode === "local" || mode === "mock")) {
+    throw new Error(`Vercel production cannot use FARM_BOTS_RUNNER=${mode} for untrusted Java code. Use sandbox or leave FARM_BOTS_RUNNER unset.`);
   }
   if (mode === "mock") return new MockRunner();
   if (mode === "sandbox") return new SandboxRunner();

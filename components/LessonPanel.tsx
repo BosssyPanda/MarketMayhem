@@ -1,7 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { getObjectiveCheckDisplay, hintLevelForObjective } from "@/lib/animate";
+import { popIn, pressable } from "@/lib/motion";
 import type { CheckResult, ConceptProgress, ObjectiveInfo, ObjectiveResult } from "@/lib/types";
 
 export default function LessonPanel({
@@ -84,14 +86,23 @@ export default function LessonPanel({
         )}
       </section>
 
-      {newUnlocks.length > 0 && (
-        <section className="unlock-banner" aria-live="polite">
-          <div>
-            <span className="section-label">New unlock</span>
-            <strong>{newUnlocks.join(", ")}</strong>
-          </div>
-        </section>
-      )}
+      <AnimatePresence>
+        {newUnlocks.length > 0 && (
+          <motion.section
+            className="unlock-banner"
+            aria-live="polite"
+            variants={popIn}
+            initial="hidden"
+            animate="show"
+            exit="exit"
+          >
+            <div>
+              <span className="section-label">New unlock</span>
+              <strong>{newUnlocks.join(", ")}</strong>
+            </div>
+          </motion.section>
+        )}
+      </AnimatePresence>
 
       <section className="lesson-section">
         <div className="section-label">unlocks</div>
@@ -146,14 +157,24 @@ export default function LessonPanel({
       <section className="lesson-section">
         <div className="section-label">hints</div>
         <div className="hints">
-          {objective.hints.slice(0, hintLevel).map((hint, index) => (
-            <p key={`${objective.id}-${index}`} className="hint">
-              {hint}
-            </p>
-          ))}
+          <AnimatePresence initial={false}>
+            {objective.hints.slice(0, hintLevel).map((hint, index) => (
+              <motion.p
+                key={`${objective.id}-${index}`}
+                className="hint"
+                variants={popIn}
+                initial="hidden"
+                animate="show"
+                exit="exit"
+              >
+                {hint}
+              </motion.p>
+            ))}
+          </AnimatePresence>
           {hintLevel < objective.hints.length && (
-            <button
+            <motion.button
               className="btn ghost"
+              {...pressable}
               onClick={() =>
                 setHintState((current) => ({
                   objectiveId: objective.id,
@@ -162,7 +183,7 @@ export default function LessonPanel({
               }
             >
               {hintLevel === 0 ? "Need a hint?" : "Another hint"}
-            </button>
+            </motion.button>
           )}
         </div>
       </section>

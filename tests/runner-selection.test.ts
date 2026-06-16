@@ -11,14 +11,24 @@ describe("getRunner", () => {
     vi.resetModules();
   });
 
-  it("rejects local and mock runners in production", async () => {
+  it("rejects local and mock runners on Vercel", async () => {
     vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("VERCEL", "1");
 
     vi.stubEnv("FARM_BOTS_RUNNER", "local");
-    await expect(async () => (await loadGetRunner()).getRunner()).rejects.toThrow(/cannot use FARM_BOTS_RUNNER=local/i);
+    await expect(async () => (await loadGetRunner()).getRunner()).rejects.toThrow(/Vercel production cannot use FARM_BOTS_RUNNER=local/i);
 
     vi.stubEnv("FARM_BOTS_RUNNER", "mock");
-    await expect(async () => (await loadGetRunner()).getRunner()).rejects.toThrow(/cannot use FARM_BOTS_RUNNER=mock/i);
+    await expect(async () => (await loadGetRunner()).getRunner()).rejects.toThrow(/Vercel production cannot use FARM_BOTS_RUNNER=mock/i);
+  });
+
+  it("allows the explicit local runner for local production verification", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("VERCEL", undefined);
+    vi.stubEnv("FARM_BOTS_RUNNER", "local");
+
+    const { getRunner } = await loadGetRunner();
+    expect(getRunner().constructor.name).toBe("LocalRunner");
   });
 
   it("defaults production to the sandbox runner", async () => {

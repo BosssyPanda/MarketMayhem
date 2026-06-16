@@ -1,5 +1,7 @@
 "use client";
 
+import { motion } from "motion/react";
+import { pressable } from "@/lib/motion";
 import type { ObjectiveInfo } from "@/lib/types";
 
 export default function Controls({
@@ -23,15 +25,15 @@ export default function Controls({
         <span className="muted small">{objective.concept}</span>
       </div>
       <div className="controls-actions">
-        <button className="btn ghost" onClick={onResetCurrent} disabled={running}>
+        <motion.button className="btn ghost" onClick={onResetCurrent} disabled={running} {...pressable}>
           Reset code
-        </button>
-        <button className="btn ghost" onClick={onResetFarm} disabled={running}>
+        </motion.button>
+        <motion.button className="btn ghost" onClick={onResetFarm} disabled={running} {...pressable}>
           Reset farm
-        </button>
-        <button className="btn run" onClick={onRun} disabled={running}>
+        </motion.button>
+        <motion.button className="btn run" onClick={onRun} disabled={running} {...pressable}>
           {running ? "Running..." : "Run"}
-        </button>
+        </motion.button>
       </div>
     </div>
   );

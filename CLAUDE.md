@@ -131,3 +131,23 @@ features.
   pass it.
 - Beginner-readable error messages: translate `javac`/runtime errors and illegal-move /
   tick-budget endings into plain language in the console.
+
+## Motion and Animation Rules
+
+This project is motion-heavy. Animation is a core design system.
+
+Use the motion-design skill before implementing any major animated feature.
+
+Tool routing:
+- Use Motion for React UI animation: hover, tap, layout, cards, panels, menus, progress bars, screen transitions.
+- Use GSAP for choreographed timelines, cinematic sequences, intro/victory/level-complete moments.
+- Use Rive for interactive mascot, character, and state-machine animation.
+- Use LottieFiles MCP for reusable animation assets like XP bursts, badge unlocks, loading animations, icons, and reward effects.
+- Use dotLottieReact to render exported .lottie assets in React.
+
+Rules:
+- Do not animate the same element/property with both Motion and GSAP.
+- Put reusable timing, easing, and spring values in /src/motion.
+- Every major animation must have reduced-motion behavior.
+- Motion should guide attention, reward progress, and clarify game state.
+- Avoid random bouncing, spinning, or excessive motion.

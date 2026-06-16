@@ -138,9 +138,11 @@ export const FALLBACK_OBJECTIVE: ObjectiveInfo = {
   starter:
     "public class Strategy {\n" +
     "    public void run(Drone drone, Farm farm) {\n" +
-    "        drone.moveEast();\n" +
-    "        drone.plant(Crop.WHEAT);\n" +
-    "        drone.watch(\"planted\", 1);\n" +
+    "        for (int i = 0; i < 3; i++) {\n" +
+    "            drone.moveEast();\n" +
+    "            drone.plant(Crop.WHEAT);\n" +
+    "            drone.watch(\"planted\", i + 1);\n" +
+    "        }\n" +
     "    }\n" +
     "}\n",
   unlock: "basic-planting",

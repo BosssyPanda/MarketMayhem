@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Pixelify+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  @keyframes blink{0%,50%{opacity:1;}50.01%,100%{opacity:0;}}
+</style>
+</helmet>
+
+<div style="min-height:100vh;background:#14161c;background-image:radial-gradient(circle at 50% -10%, #1d2129 0%, #14161c 60%);font-family:'JetBrains Mono',ui-monospace,monospace;padding:38px 24px 64px;">
+  <div style="max-width:1000px;margin:0 auto;">
+
+    <!-- header -->
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-bottom:8px;">
+      <div>
+        <div style="font-family:'Pixelify Sans',sans-serif;font-weight:700;font-size:34px;line-height:1.05;color:#f1f3f7;letter-spacing:.5px;">Code runs &rarr; the farm reacts</div>
+        <div style="color:#8b91a0;font-size:13.5px;margin-top:8px;max-width:640px;line-height:1.6;">A looping pixel-art reference for an automation-farming game. Write a few lines &rarr; a drone tills, plants, grows and harvests the whole field. Two visual directions below.</div>
+      </div>
+    </div>
+
+    <!-- transport -->
+    <div style="display:flex;align-items:center;gap:16px;background:#1b1e26;border:1px solid #2a2e39;border-radius:12px;padding:11px 16px;margin:18px 0 26px;">
+      <button onClick="{{ togglePlay }}" style="font-family:'Pixelify Sans',sans-serif;font-weight:600;cursor:pointer;border:none;width:38px;height:38px;border-radius:9px;background:#e0653c;color:#fff;font-size:15px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;">{{ playGlyph }}</button>
+      <div ref="{{ refTrack }}" style="position:relative;flex:1;height:10px;border-radius:6px;background:#2c313d;cursor:pointer;touch-action:none;">
+        <div ref="{{ refFill }}" style="position:absolute;left:0;top:0;bottom:0;width:0%;border-radius:6px;background:linear-gradient(90deg,#e0653c,#e0962e);"></div>
+        <div ref="{{ refKnob }}" style="position:absolute;top:50%;left:0%;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.4);transform:translate(-50%,-50%);"></div>
+      </div>
+      <div ref="{{ refTime }}" style="font-size:12.5px;color:#9aa0ad;min-width:78px;text-align:right;font-variant-numeric:tabular-nums;">0:00 / 0:15</div>
+      <div style="display:flex;gap:4px;flex:0 0 auto;">
+        <button onClick="{{ setSpeedHalf }}" style="cursor:pointer;border:1px solid #343a47;background:transparent;color:#aab0bd;border-radius:7px;padding:5px 8px;font-size:11.5px;font-family:'JetBrains Mono',monospace;">0.5&times;</button>
+        <button onClick="{{ setSpeedOne }}" style="cursor:pointer;border:1px solid #343a47;background:transparent;color:#aab0bd;border-radius:7px;padding:5px 8px;font-size:11.5px;font-family:'JetBrains Mono',monospace;">1&times;</button>
+        <button onClick="{{ setSpeedTwo }}" style="cursor:pointer;border:1px solid #343a47;background:transparent;color:#aab0bd;border-radius:7px;padding:5px 8px;font-size:11.5px;font-family:'JetBrains Mono',monospace;">2&times;</button>
+      </div>
+    </div>
+
+    <!-- ===================== VARIATION 1 ===================== -->
+    <div style="margin-bottom:14px;display:flex;align-items:baseline;gap:12px;">
+      <span style="font-family:'Pixelify Sans',sans-serif;font-weight:600;color:#e9ebf0;font-size:17px;">01 &middot; Cozy Carrots</span>
+      <span style="color:#7b818f;font-size:12.5px;">dark editor &middot; day grassland &middot; one line plants the whole field</span>
+    </div>
+    <div style="position:relative;width:100%;aspect-ratio:16/9;border-radius:16px;overflow:hidden;margin-bottom:46px;box-shadow:0 24px 60px -20px rgba(0,0,0,.7);">
+      <div ref="{{ refFrame1 }}" style="position:absolute;top:0;left:0;width:1280px;height:720px;transform-origin:0 0;background:#1b1f2e;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;">
+        <!-- title bar -->
+        <div style="height:46px;flex:0 0 46px;background:#13161f;display:flex;align-items:center;padding:0 18px;gap:14px;border-bottom:1px solid #20242f;">
+          <div style="display:flex;gap:8px;">
+            <span style="width:13px;height:13px;border-radius:50%;background:#ff5f57;"></span>
+            <span style="width:13px;height:13px;border-radius:50%;background:#febc2e;"></span>
+            <span style="width:13px;height:13px;border-radius:50%;background:#28c840;"></span>
+          </div>
+          <span style="color:#aeb4c2;font-size:14px;">field.py</span>
+          <div style="flex:1;"></div>
+          <span ref="{{ refPill1 }}" style="font-family:'Pixelify Sans',sans-serif;font-size:13px;font-weight:500;color:#f0a07a;background:rgba(224,101,60,.16);padding:5px 12px;border-radius:20px;">&bull; running</span>
+        </div>
+        <div style="flex:1;display:flex;min-height:0;">
+          <!-- code -->
+          <div style="width:520px;flex:0 0 520px;background:#1b1f2e;padding:20px 6px;overflow:hidden;border-right:1px solid #20242f;">
+            <div ref="{{ refCode1 }}">
+              <sc-for list="{{ v1Lines }}" as="line" hint-placeholder-count="11">
+                <div data-li="{{ line.idx }}" style="display:flex;align-items:flex-start;padding:0 12px;border-radius:6px;">
+                  <span data-mark style="flex:0 0 16px;color:#e0653c;font-size:12px;line-height:25px;opacity:0;">&#9656;</span>
+                  <span style="flex:0 0 30px;text-align:right;padding-right:16px;color:#555c70;line-height:25px;font-size:13px;">{{ line.no }}</span>
+                  <span data-code style="white-space:pre;line-height:25px;font-size:15px;color:#cdd2df;"></span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <!-- farm -->
+          <div style="flex:1;position:relative;background:#3d6128;min-width:0;">
+            <canvas ref="{{ refCanvas1 }}" style="display:block;width:100%;height:100%;image-rendering:pixelated;"></canvas>
+            <div style="position:absolute;top:16px;left:16px;font-family:'Pixelify Sans',sans-serif;font-size:14px;color:#eafbe0;background:rgba(20,34,14,.5);padding:5px 11px;border-radius:8px;">10 &times; 8 plots</div>
+            <div style="position:absolute;top:16px;right:16px;text-align:right;font-family:'Pixelify Sans',sans-serif;background:rgba(20,34,14,.5);padding:7px 13px;border-radius:8px;">
+              <div style="font-size:11px;color:#bfe6a8;letter-spacing:1px;text-transform:uppercase;" ref="{{ refLabel1 }}">ready</div>
+              <div style="font-size:24px;color:#ffe9b0;font-weight:700;line-height:1.1;margin-top:2px;"><span ref="{{ refCount1 }}">0</span> <span style="font-size:13px;color:#f0c98a;">carrots</span></div>
+            </div>
+            <div style="position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.07) 0 2px,transparent 2px 4px);opacity:.4;"></div>
+            <div style="position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 120px rgba(8,16,4,.45);"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== VARIATION 2 ===================== -->
+    <div style="margin-bottom:14px;display:flex;align-items:baseline;gap:12px;">
+      <span style="font-family:'Pixelify Sans',sans-serif;font-weight:600;color:#e9ebf0;font-size:17px;">02 &middot; Golden Scale</span>
+      <span style="color:#7b818f;font-size:12.5px;">light editor &middot; sunset wheat &middot; a single loop runs a huge field</span>
+    </div>
+    <div style="position:relative;width:100%;aspect-ratio:16/9;border-radius:16px;overflow:hidden;box-shadow:0 24px 60px -20px rgba(0,0,0,.7);">
+      <div ref="{{ refFrame2 }}" style="position:absolute;top:0;left:0;width:1280px;height:720px;transform-origin:0 0;background:#f3ebd5;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;">
+        <div style="height:46px;flex:0 0 46px;background:#e7ddc1;display:flex;align-items:center;padding:0 18px;gap:14px;border-bottom:1px solid #d8c9a3;">
+          <div style="display:flex;gap:8px;">
+            <span style="width:13px;height:13px;border-radius:50%;background:#ff5f57;"></span>
+            <span style="width:13px;height:13px;border-radius:50%;background:#febc2e;"></span>
+            <span style="width:13px;height:13px;border-radius:50%;background:#28c840;"></span>
+          </div>
+          <span style="color:#6a5c40;font-size:14px;">automate.py</span>
+          <div style="flex:1;"></div>
+          <span ref="{{ refPill2 }}" style="font-family:'Pixelify Sans',sans-serif;font-size:13px;font-weight:500;color:#b9612a;background:rgba(194,98,42,.16);padding:5px 12px;border-radius:20px;">&bull; running</span>
+        </div>
+        <div style="flex:1;display:flex;min-height:0;">
+          <div style="width:520px;flex:0 0 520px;background:#f3ebd5;padding:20px 6px;overflow:hidden;border-right:1px solid #e1d6ba;">
+            <div ref="{{ refCode2 }}">
+              <sc-for list="{{ v2Lines }}" as="line" hint-placeholder-count="9">
+                <div data-li="{{ line.idx }}" style="display:flex;align-items:flex-start;padding:0 12px;border-radius:6px;">
+                  <span data-mark style="flex:0 0 16px;color:#c2622a;font-size:12px;line-height:25px;opacity:0;">&#9656;</span>
+                  <span style="flex:0 0 30px;text-align:right;padding-right:16px;color:#b1a280;line-height:25px;font-size:13px;">{{ line.no }}</span>
+                  <span data-code style="white-space:pre;line-height:25px;font-size:15px;color:#4f4533;"></span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="flex:1;position:relative;background:#5d7d31;min-width:0;">
+            <canvas ref="{{ refCanvas2 }}" style="display:block;width:100%;height:100%;image-rendering:pixelated;"></canvas>
+            <div style="position:absolute;top:16px;left:16px;font-family:'Pixelify Sans',sans-serif;font-size:14px;color:#fff6e0;background:rgba(54,40,14,.5);padding:5px 11px;border-radius:8px;">14 &times; 10 plots</div>
+            <div style="position:absolute;top:16px;right:16px;text-align:right;font-family:'Pixelify Sans',sans-serif;background:rgba(54,40,14,.5);padding:7px 13px;border-radius:8px;">
+              <div style="font-size:11px;color:#ffe1a8;letter-spacing:1px;text-transform:uppercase;" ref="{{ refLabel2 }}">ready</div>
+              <div style="font-size:24px;color:#fff0c2;font-weight:700;line-height:1.1;margin-top:2px;"><span ref="{{ refCount2 }}">0</span> <span style="font-size:13px;color:#f6d98a;">wheat</span></div>
+            </div>
+            <div style="position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.07) 0 2px,transparent 2px 4px);opacity:.35;"></div>
+            <div style="position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 120px rgba(40,24,6,.4);"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;speed&quot;:{&quot;editor&quot;:&quot;float&quot;,&quot;default&quot;:1,&quot;min&quot;:0.25,&quot;max&quot;:2,&quot;step&quot;:0.25,&quot;tsType&quot;:&quot;number&quot;},&quot;accentV1&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#e0653c&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;accentV2&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#e0962e&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state = { playing: true, speed: 1 };
+
+  constructor(props) {
+    super(props);
+    const LOOP = 15000;
+    this.LOOP = LOOP;
+
+    // --- programs ---
+    this.PROG1 = [
+      '# tend the whole field, forever',
+      'def routine():',
+      '    for plot in field:',
+      '        goto(plot)',
+      '        till()',
+      '        plant(CARROT)',
+      '    wait_for(grown)',
+      '    for plot in field:',
+      '        harvest()',
+      'while True:',
+      '    routine()',
+    ];
+    this.PROG2 = [
+      '// one loop runs the entire world',
+      'def automate(world):',
+      '    for tile in world.grid:',
+      '        if tile.empty:',
+      '            plant(WHEAT)',
+      '        if tile.ripe:',
+      '            harvest(tile)',
+      '            silo.gold += 1',
+      'run_forever(automate)',
+    ];
+
+    this.TL1 = { typeEnd: 3000, tillStart: 3400, tillEnd: 7000, separatePlant: true, plantStart: 7000, plantEnd: 8000, growDur: 2600, harvestStart: 11000, harvestEnd: 13600, loop: LOOP };
+    this.TL2 = { typeEnd: 3000, tillStart: 3400, tillEnd: 7600, separatePlant: false, plantStart: 0, plantEnd: 0, growDur: 2400, harvestStart: 11000, harvestEnd: 13800, loop: LOOP };
+
+    this.theme1 = { keyword: '#e0653c', fn: '#74b6e8', str: '#8ec96a', cons: '#e6c34a', num: '#d99b6c', comment: '#5b6079', cursor: '#9fe06a' };
+    this.theme2 = { keyword: '#c2622a', fn: '#3f7aa8', str: '#7a9a3a', cons: '#b88a1e', num: '#a8702e', comment: '#9c8d68', cursor: '#5e8a33' };
+
+    this._clock = 0;
+    this._drag = false;
+    this._lastSave = 0;
+    this.els = {};
+    this._setters = {};
+    this.ready = false;
+  }
+
+  ref(name) {
+    if (!this._setters[name]) this._setters[name] = (el) => { this.els[name] = el; };
+    return this._setters[name];
+  }
+
+  // ---- syntax colouring (lightweight) ----
+  colorLine(text, th) {
+    let s = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    if (/^\s*(#|\/\/)/.test(text)) return '<span style="color:' + th.comment + '">' + s + '</span>';
+    return s.replace(/("[^"]*")|\b(def|for|in|if|elif|else|while|return|True|False|and|or|not)\b|\b([A-Z_]{2,})\b|([A-Za-z_][\w]*)(?=\s*\()|\b(\d+)\b/g,
+      (m, str, kw, cons, fn, num) => {
+        if (str) return '<span style="color:' + th.str + '">' + str + '</span>';
+        if (kw) return '<span style="color:' + th.keyword + ';font-weight:700">' + kw + '</span>';
+        if (cons) return '<span style="color:' + th.cons + '">' + cons + '</span>';
+        if (fn) return '<span style="color:' + th.fn + '">' + fn + '</span>';
+        if (num) return '<span style="color:' + th.num + '">' + num + '</span>';
+        return m;
+      });
+  }
+
+  mkCursor(color) {
+    const s = document.createElement('span');
+    s.textContent = '\u258B';
+    s.style.cssText = 'display:inline-block;margin-left:1px;animation:blink 1s steps(1) infinite;color:' + color + ';';
+    return s;
+  }
+
+  async componentDidMount() {
+    if (this.props && this.props.speed) this.setState({ speed: this.props.speed });
+
+    // restore playback position
+    try { const s = +localStorage.getItem('fwr_clock'); if (s > 0 && s < this.LOOP) this._clock = s; } catch (e) {}
+
+    const { createFarm } = await import('./farm.js');
+
+    const pal1 = { grass: '#6aa23c', grassAlt: '#669c39', grassDark: '#4f7d2b', grassLight: '#8cc257', flower: '#f0d24a', flowerHi: '#fff0a6', soil: '#825232', soilDark: '#5f3a20', soilLine: '#6e4527', soilLight: '#9c6541', leaf: '#46a233', leafDark: '#327d24', leafLight: '#79c655', crop: '#e8833a', cropHi: '#ffb066', metal: '#3a3440', glass: '#bfe6f0', droneDark: '#7a2f1f', border: '#3d6128' };
+    const pal2 = { grass: '#7aac44', grassAlt: '#74a53f', grassDark: '#5e8a33', grassLight: '#bfe07a', flower: '#efb43c', flowerHi: '#ffe39a', soil: '#8a5630', soilDark: '#653d20', soilLine: '#714425', soilLight: '#a36c3e', leaf: '#8fa83f', leafDark: '#6f8a2f', leafLight: '#b6c95e', crop: '#e0a82e', cropHi: '#f7d96a', metal: '#4a3f33', glass: '#d8eef0', droneDark: '#7a4f17', border: '#5d7d31' };
+
+    this.farm1 = createFarm(this.els.refCanvas1 || this.els.canvas1, { cols: 10, rows: 8, crop: 'carrot', pal: pal1, accent: this.accent1(), timeline: this.TL1 });
+    this.farm2 = createFarm(this.els.canvas2, { cols: 14, rows: 10, crop: 'wheat', pal: pal2, accent: this.accent2(), timeline: this.TL2 });
+
+    // precompute coloured html + char totals
+    this.col1 = this.PROG1.map(l => this.colorLine(l, this.theme1));
+    this.col2 = this.PROG2.map(l => this.colorLine(l, this.theme2));
+    this.total1 = this.PROG1.reduce((a, l) => a + l.length, 0);
+    this.total2 = this.PROG2.reduce((a, l) => a + l.length, 0);
+    this.cursor1 = this.mkCursor(this.theme1.cursor);
+    this.cursor2 = this.mkCursor(this.theme2.cursor);
+
+    // layout scaling + canvas sizing
+    const fit = () => {
+      [['frame1', this.farm1], ['frame2', this.farm2]].forEach(([k, farm]) => {
+        const frame = this.els[k];
+        if (!frame || !frame.parentElement) return;
+        const w = frame.parentElement.clientWidth;
+        frame.style.transform = 'scale(' + (w / 1280) + ')';
+        if (farm) farm.resize();
+      });
+    };
+    this._fit = fit;
+    this._ro = new ResizeObserver(fit);
+    if (this.els.frame1 && this.els.frame1.parentElement) this._ro.observe(this.els.frame1.parentElement);
+    if (this.els.frame2 && this.els.frame2.parentElement) this._ro.observe(this.els.frame2.parentElement);
+    fit();
+    // a second pass after fonts settle
+    setTimeout(fit, 300);
+
+    // scrub interactions
+    const track = this.els.refTrack;
+    if (track) {
+      const seek = (e) => {
+        const r = track.getBoundingClientRect();
+        const x = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+        this._clock = x * this.LOOP;
+        this.drawAll(this._clock);
+      };
+      track.addEventListener('pointerdown', (e) => { this._drag = true; try { track.setPointerCapture(e.pointerId); } catch (er) {} seek(e); });
+      track.addEventListener('pointermove', (e) => { if (this._drag) seek(e); });
+      const end = () => { this._drag = false; };
+      track.addEventListener('pointerup', end);
+      track.addEventListener('pointercancel', end);
+    }
+
+    this.ready = true;
+    this._last = performance.now();
+    const loop = (now) => {
+      const dt = now - this._last; this._last = now;
+      if (this.state.playing && !this._drag) {
+        this._clock = (this._clock + dt * this.state.speed) % this.LOOP;
+      }
+      this.drawAll(this._clock);
+      if (now - this._lastSave > 600) { try { localStorage.setItem('fwr_clock', String(Math.round(this._clock))); } catch (e) {} this._lastSave = now; }
+      this._raf = requestAnimationFrame(loop);
+    };
+    this._raf = requestAnimationFrame(loop);
+  }
+
+  componentDidUpdate(prev) {
+    if (prev && this.props && prev.speed !== this.props.speed && this.props.speed != null) {
+      this.setState({ speed: this.props.speed });
+    }
+  }
+
+  componentWillUnmount() {
+    if (this._raf) cancelAnimationFrame(this._raf);
+    if (this._ro) this._ro.disconnect();
+  }
+
+  accent1() { return (this.props && this.props.accentV1) || '#e0653c'; }
+  accent2() { return (this.props && this.props.accentV2) || '#e0962e'; }
+
+  drawAll(t) {
+    if (!this.ready) return;
+    this.farm1.cfg.accent = this.accent1();
+    this.farm2.cfg.accent = this.accent2();
+    this.farm1.draw(t);
+    this.farm2.draw(t);
+    this.updateCode(this.els.refCode1, this.PROG1, this.col1, this.total1, this.TL1, this.cursor1, t, this.active1(t));
+    this.updateCode(this.els.refCode2, this.PROG2, this.col2, this.total2, this.TL2, this.cursor2, t, this.active2(t));
+    this.updateHud(1, this.farm1.stats(t), t);
+    this.updateHud(2, this.farm2.stats(t), t);
+    this.updateTransport(t);
+  }
+
+  updateCode(container, prog, colored, total, TL, cursor, t, activeLine) {
+    if (!container) return;
+    const rows = container.querySelectorAll('[data-li]');
+    let revealed = t < TL.typeEnd ? Math.floor((t / TL.typeEnd) * total) : total;
+    // locate current line / chars during typing
+    let acc = 0, curLine = -1, curChars = 0;
+    for (let i = 0; i < prog.length; i++) {
+      if (revealed >= acc + prog[i].length) { acc += prog[i].length; continue; }
+      curLine = i; curChars = revealed - acc; break;
+    }
+    const typing = curLine !== -1;
+    rows.forEach((row, i) => {
+      const code = row.querySelector('[data-code]');
+      const mark = row.querySelector('[data-mark]');
+      if (!code) return;
+      if (!typing || i < curLine) {
+        if (code._html !== colored[i]) { code.innerHTML = colored[i]; code._html = colored[i]; }
+      } else if (i === curLine) {
+        code.textContent = prog[i].slice(0, curChars); code._html = null;
+        code.appendChild(cursor);
+      } else {
+        if (code._html !== '') { code.textContent = ''; code._html = ''; }
+      }
+      const on = !typing && i === activeLine;
+      row.style.background = on ? 'rgba(224,140,80,.12)' : 'transparent';
+      if (mark) mark.style.opacity = on ? '1' : '0';
+    });
+    if (!typing && cursor.parentElement) cursor.parentElement.removeChild(cursor);
+  }
+
+  active1(t) {
+    const T = this.TL1;
+    if (t < T.typeEnd || t < T.tillStart) return -1;
+    if (t <= T.tillEnd) return 4;        // till()
+    if (t <= T.plantEnd) return 5;       // plant(CARROT)
+    if (t < T.harvestStart) return 6;    // wait_for(grown)
+    if (t <= T.harvestEnd) return 8;     // harvest()
+    return 10;                            // routine()
+  }
+  active2(t) {
+    const T = this.TL2;
+    if (t < T.typeEnd || t < T.tillStart) return -1;
+    if (t <= T.tillEnd) return 4;        // plant(WHEAT)
+    if (t < T.harvestStart) return 5;    // if tile.ripe
+    if (t <= T.harvestEnd) return 6;     // harvest(tile)
+    return 8;                             // run_forever
+  }
+
+  phaseLabel(v, t) {
+    const T = v === 1 ? this.TL1 : this.TL2;
+    if (t < T.typeEnd) return 'compiling';
+    if (t < T.tillStart) return 'ready';
+    if (t <= T.tillEnd) return v === 1 ? 'tilling' : 'planting';
+    if (v === 1 && t <= T.plantEnd) return 'planting';
+    if (t < T.harvestStart) return 'growing';
+    if (t <= T.harvestEnd) return 'harvesting';
+    return 'harvested!';
+  }
+
+  updateHud(v, st, t) {
+    const label = this.els['refLabel' + v];
+    const count = this.els['refCount' + v];
+    if (label) { const txt = this.phaseLabel(v, t); if (label.textContent !== txt) label.textContent = txt; }
+    if (count) { const n = String(st.harvested); if (count.textContent !== n) count.textContent = n; }
+  }
+
+  updateTransport(t) {
+    const pct = (t / this.LOOP) * 100;
+    if (this.els.refFill) this.els.refFill.style.width = pct + '%';
+    if (this.els.refKnob) this.els.refKnob.style.left = pct + '%';
+    if (this.els.refTime) {
+      const s = Math.floor(t / 1000);
+      this.els.refTime.textContent = '0:' + (s < 10 ? '0' : '') + s + ' / 0:15';
+    }
+    const run = (v, T) => {
+      const pill = this.els['refPill' + v];
+      if (!pill) return;
+      const txt = t < T.typeEnd ? '\u270E typing\u2026' : '\u25CF running';
+      if (pill.textContent !== txt) pill.textContent = txt;
+    };
+    run(1, this.TL1); run(2, this.TL2);
+  }
+
+  renderVals() {
+    return {
+      v1Lines: this.PROG1.map((l, i) => ({ idx: i, no: String(i + 1) })),
+      v2Lines: this.PROG2.map((l, i) => ({ idx: i, no: String(i + 1) })),
+      playGlyph: this.state.playing ? '\u275A\u275A' : '\u25B6',
+      togglePlay: () => this.setState(s => ({ playing: !s.playing })),
+      setSpeedHalf: () => this.setState({ speed: 0.5, playing: true }),
+      setSpeedOne: () => this.setState({ speed: 1, playing: true }),
+      setSpeedTwo: () => this.setState({ speed: 2, playing: true }),
+      refCanvas1: this.ref('canvas1'),
+      refCanvas2: this.ref('canvas2'),
+      refFrame1: this.ref('frame1'),
+      refFrame2: this.ref('frame2'),
+      refCode1: this.ref('refCode1'),
+      refCode2: this.ref('refCode2'),
+      refPill1: this.ref('refPill1'),
+      refPill2: this.ref('refPill2'),
+      refLabel1: this.ref('refLabel1'),
+      refLabel2: this.ref('refLabel2'),
+      refCount1: this.ref('refCount1'),
+      refCount2: this.ref('refCount2'),
+      refTrack: this.ref('refTrack'),
+      refFill: this.ref('refFill'),
+      refKnob: this.ref('refKnob'),
+      refTime: this.ref('refTime'),
+    };
+  }
+}
+</script>
+</body>
+</html>
