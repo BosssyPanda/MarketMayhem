@@ -25,7 +25,7 @@ Locked design (decided with the user, 2026-06-16):
 | World structure | **One persistent farm** — a single ever-running farm; objectives unlock abilities/areas/crops; concepts are introduced as the next objective requires them |
 | Progression | **Objectives unlock abilities** — no currency/economy; beating an objective permanently unlocks a new ability, area, crop, or speed |
 | Teaching support | **Concept lessons** (short lesson + worked example before a concept's first use) **+ progressive hints** when stuck. **No** AI tutor |
-| Curriculum | **8 core concepts** (below) must be mastered; then an **open-ended phase** focused on **recursion & puzzles** that keeps growing |
+| Curriculum | **from-zero, school-order concept ladder** (below) — each concept mastered through play; then an **open-ended phase** focused on **recursion & puzzles** that keeps growing |
 | Mastery | **Consistent correct use over time** (a streak), with **adaptive recaps** if an already-taught core keeps failing |
 | Debugging UX | **Live variable inspector** (drone state + player-watched variables + resources, updating as the program runs) |
 | Aesthetic | **Clean, programmatically-rendered animated grid** (Canvas/SVG + CSS tweens; no PNG sprite assets) |
@@ -36,14 +36,19 @@ Locked design (decided with the user, 2026-06-16):
 plus their own helper methods). The player never edits the engine, the world, the objectives,
 or any infrastructure.
 
-### The 8 core concepts (must each be mastered)
+### The concept ladder (must each be mastered)
 
-1. `for` loops 2. `while` loops 3. arrays 4. methods 5. **sequential search**
-6. **binary search** 7. **bubble sort** (lighter core) 8. **selection sort** (lighter core)
+A **from-zero, school-order** ladder of **14 core concepts** (expanded 2026-06 from the
+original 8 so a total beginner can start at the very beginning and prep for IBDP):
 
-Woven in throughout: `if`/`else`, nested loops, 2D arrays, `String` methods, `%` and `/`.
-**After all 8 cores are mastered**, the **open-ended phase** unlocks, focused on **recursion
-& logic puzzles**, and may keep expanding over time.
+1. **methods (calling)** 2. **variables & types** 3. **`%` and `/`** 4. **comparisons &
+booleans** 5. **`if`/`else`** 6. `for` loops 7. **nested loops** 8. `while` loops
+9. arrays (1D) 10. **static methods (writing your own)** 11. **sequential search**
+12. **binary search** 13. **bubble sort** (lighter core) 14. **selection sort** (lighter core)
+
+Woven in as side-topics: `String` methods and 2D arrays.
+**After all core concepts are mastered**, the **open-ended phase** unlocks, focused on
+**recursion & logic puzzles**, and may keep expanding over time.
 
 ---
 
@@ -103,6 +108,8 @@ state persists across runs so the farm genuinely progresses "over time."
 | `crops()` | `String[]` | Crop names along a row/region (parallel with `prices()`). *Populated when relevant.* |
 | `prices()` | `int[]` | Market prices; **sorted ascending** on binary-search objectives. *Populated when relevant.* |
 | `moisture()` | `int[]` | Per-column moisture readings. *Populated when relevant.* |
+| `signal()` | `int[]` | **Editable workbench array** — returns the *backing* array (not a copy), so `signal()[i] = x` modifies it in place. Used by array-modification objectives (clamp, shift/rotate). Seeded per objective; reset each run. *Populated when relevant.* |
+| `grid()` | `int[][]` | A 2D grid (read-only copy) for the 2D-array objective; read with `grid()[row][col]`. *Populated when relevant.* |
 
 > Data accessors return an empty array when the current objective doesn't use them; each
 > objective's briefing states which data is available. Abilities are queried via
@@ -141,20 +148,34 @@ evidence of real understanding.
 
 ### Concept → objective → unlock (suggested order; tunable)
 
-| # | Concept (core) | Objective (in the persistent farm) | Unlocks |
-|---|----------------|------------------------------------|---------|
-| 1 | methods + sequential statements | **First Sprout** — drive a short path and plant your first tiles | Basic planting/harvesting + the starter field |
-| 2 | `for` loops (+ nested, 2D grid) | **The Long Rows** — plant/harvest a whole row, then sweep the field | A **bigger field** |
-| 3 | arrays + parallel arrays | **Stock the Stall** — read `crops()`/`prices()`; sum, average, max/min, count | The **market stall** + price/inventory sensors |
-| 4 | `while` loops (+ `%` `/`) | **Harvest 'til Done** — harvest until empty; decode an irrigation code digit-by-digit | **Irrigation** (faster growth) + a new crop |
-| 5 | sequential search | **Find the Crop** — scan `crops()` for a target; return index or `-1`; count comparisons | A **crop locator** |
-| 6 | binary search | **Fast Market** — search sorted `prices()` (low/high/mid); comparison-budgeted | **Fast lookup** (speed boost) |
-| 7 | **bubble sort** (light) | **Tidy the Stalls** — bubble-sort stalls/prices into order | **Sorted market view** |
-| 8 | **selection sort** (light) | **Pick the Best** — selection-sort to rank crops by value | **Auto-prioritize** highest-value crop |
-| — | **open-ended: recursion & puzzles** | unlocks only after all 8 cores mastered | recursive/puzzle "special fields"; keeps growing |
+33 objectives across the 14-concept ladder plus an open stretch phase (beginner-first; the
+earliest ones are pure compute-and-`watch`, no drone driving). Representative objectives per
+concept:
 
-> Adding an objective = one entry in `Objectives.java` (world setup + concept tag + lesson +
-> hints + objective checks + starter snippet + unlock) — nothing else changes.
+| # | Concept (core) | Objective(s) | Unlocks (sample) |
+|---|----------------|--------------|---------|
+| 1 | methods (calling) | **First Sprout** — drive a path and plant | basic planting + starter field |
+| 2 | variables & types | **Store the Reading** · **Split the Harvest** (`int` vs `double` `/`) | sensor readout, baskets |
+| 3 | `%` and `/` | **Valve Check** · **Decode the Code** (digit extraction) | valve cycle, code reader |
+| 4 | comparisons & booleans | **Ripeness Check** (`&&`) · **Threshold Flag** (`||` `!`) | scanners |
+| 5 | `if`/`else` | **Classify the Moisture** (bands) · **The Field Grader** (else-if + decision) | classifier, grader |
+| 6 | `for` loops | **The Long Rows** (drive a row) · **Sum the Row** (accumulate) | bigger field, sensor sweep |
+| 7 | nested loops | **Sweep the Field** (grid) · **Triangular Nursery** (inner depends on outer) | field map, nursery grid |
+| 8 | `while` loops | **Harvest 'til Done** · **Count the Digits** (`% 10` / `/ 10`) | irrigation, digit counter |
+| 9 | arrays (1D) | **Stock the Stall** · **Field Stats** (sum/avg/max+index) · **Threshold Count** · **Improving Scores** (adjacent compare + conditional sub-range avg) | market + reports |
+| 10 | static methods (writing) | **Write a Helper** · **Boolean Helper** · **Compose Helpers** (helper in a loop) | helper toolkit |
+| 11 | sequential search | **Find the Crop** — index or `-1`; count comparisons | a crop locator |
+| 12 | binary search | **Fast Market** — sorted `prices()` (low/high/mid); budgeted | fast lookup |
+| 13 | **bubble sort** (light) | **Tidy the Stalls** — bubble-sort into order | sorted market view |
+| 14 | **selection sort** (light) | **Pick the Best** — rank crops by value | auto-prioritize |
+| — | **open stretch phase** (unlocks after all cores mastered) | **Mastery Garden** (recursion) · **Recursive Factorial** · **Recursive Power** · **Grid Totals** (2D arrays) · **Scan the Names** (String methods) | special fields; keeps growing |
+
+> Adding an objective = one entry in `engine/Objectives.java` (world setup + concept tag +
+> lesson + hints + objective checks in `Objective.evaluate` + starter + unlock + a reference
+> solution in `engine/solutions/<id>.java`) **and** — because the client mirrors the engine
+> progression — append it (in registry order) to `OBJECTIVES`/`OBJECTIVE_UNLOCKS` in
+> `lib/runner/stateCodec.ts` (else `sanitizeFarmState` resets it to `first-sprout`) and to
+> `FALLBACK_CATALOG.conceptOrder` in `lib/types.ts` if it introduces a new concept.
 
 ### Mastery (consistent correct use over time)
 

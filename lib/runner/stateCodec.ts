@@ -36,37 +36,97 @@ export function encodeFarmState(state: FarmState | null | undefined): string {
   ].join("\n");
 }
 
+// Ordered mirror of the engine registry (engine/Objectives.java). Keep this in
+// lockstep: index i's objective grants OBJECTIVE_UNLOCKS[i] on pass, which is
+// what lets the player reach objective i+1. New objectives MUST be added here or
+// sanitizeFarmState will reset the player back to "first-sprout".
 const OBJECTIVES = [
   "first-sprout",
+  "store-the-reading",
+  "split-the-harvest",
+  "valve-check",
+  "decode-the-code",
+  "ripeness-check",
+  "threshold-flag",
+  "classify-moisture",
+  "field-grader",
   "the-long-rows",
-  "stock-the-stall",
+  "sum-the-row",
+  "sweep-the-field",
+  "field-pattern",
   "harvest-til-done",
+  "count-the-digits",
+  "stock-the-stall",
+  "field-stats",
+  "threshold-count",
+  "improving-scores",
+  "clamp-the-signal",
+  "pass-the-tokens",
+  "write-a-helper",
+  "boolean-helper",
+  "compose-helpers",
   "find-the-crop",
   "fast-market",
   "tidy-the-stalls",
   "pick-the-best",
   "mastery-garden",
+  "recursive-factorial",
+  "recursive-power",
+  "grid-totals",
+  "name-scan",
 ] as const;
 
 const OBJECTIVE_UNLOCKS = [
-  "basic-planting",
-  "bigger-field",
-  "market-stall",
-  "irrigation",
-  "crop-locator",
-  "fast-lookup",
-  "sorted-market-view",
-  "auto-prioritize",
-  "recursion-puzzles",
+  "basic-planting",      // first-sprout
+  "sensor-readout",      // store-the-reading
+  "basket-packer",       // split-the-harvest
+  "valve-cycle",         // valve-check
+  "code-decoder",        // decode-the-code
+  "ripeness-scanner",    // ripeness-check
+  "smart-irrigation",    // threshold-flag
+  "moisture-classifier", // classify-moisture
+  "auto-grader",         // field-grader
+  "bigger-field",        // the-long-rows
+  "sensor-sweep",        // sum-the-row
+  "field-map",           // sweep-the-field
+  "nursery-grid",        // field-pattern
+  "irrigation",          // harvest-til-done
+  "digit-counter",       // count-the-digits
+  "market-stall",        // stock-the-stall
+  "harvest-report",      // field-stats
+  "charge-monitor",      // threshold-count
+  "improvement-tracker", // improving-scores
+  "signal-limiter",      // clamp-the-signal
+  "token-conveyor",      // pass-the-tokens
+  "pack-helper",         // write-a-helper
+  "ripeness-helper",     // boolean-helper
+  "yield-engine",        // compose-helpers
+  "crop-locator",        // find-the-crop
+  "fast-lookup",         // fast-market
+  "sorted-market-view",  // tidy-the-stalls
+  "auto-prioritize",     // pick-the-best
+  "recursion-puzzles",   // mastery-garden
+  "factorial-engine",    // recursive-factorial
+  "power-engine",        // recursive-power
+  "grid-reader",         // grid-totals
+  "name-scanner",        // name-scan
 ] as const;
 
-const CORE_OBJECTIVE_UNLOCKS = OBJECTIVE_UNLOCKS.slice(0, 8);
+// The "open phase" (mastery-garden onward — recursion + stretch objectives) is
+// gated on all cores mastered; the core unlocks are everything before it.
+const CORE_OBJECTIVE_UNLOCKS = OBJECTIVE_UNLOCKS.slice(0, OBJECTIVES.indexOf("mastery-garden"));
 
 const CONCEPTS = [
   "methods",
+  "variables-types",
+  "modulo-division",
+  "comparison-operators",
+  "if-else",
   "for-loops",
-  "arrays",
+  "nested-loops",
   "while-loops",
+  "arrays",
+  "static-methods",
   "sequential-search",
   "binary-search",
   "bubble-sort",

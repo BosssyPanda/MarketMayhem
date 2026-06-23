@@ -5,6 +5,7 @@ import { motion } from "motion/react";
 import { getConceptLesson } from "@/lib/curriculum";
 import {
   checkPredict,
+  collectWrongDrills,
   evaluateWriteLine,
   getDrillsForConcept,
   MASTERY_TARGET,
@@ -47,6 +48,13 @@ export default function PracticePanel({
   const [picked, setPicked] = useState<number | null>(null);
   const [checking, setChecking] = useState(false);
   const [verdict, setVerdict] = useState<{ pass: boolean; reason: string } | null>(null);
+  // Was the most recent answer right? Drives the honest verdict shown with the
+  // explanation (a wrong predict must say so, not "nice").
+  const [lastCorrect, setLastCorrect] = useState<boolean | null>(null);
+  // "Review my misses" mode: serve only drills the learner got wrong, across all
+  // concepts, until they're cleared (recordDrillResult drops a drill from `wrong`
+  // on a correct answer, so the pool shrinks as they re-master each one).
+  const [review, setReview] = useState(false);
 
   const active = current.concept;
   const drill = current.drill;
@@ -56,11 +64,33 @@ export default function PracticePanel({
   const startDrill = useCallback(
     (concept: string, exclude?: string) => {
       const next = pickDrill(concept, practice, exclude);
+      setReview(false);
       setCurrent({ concept, drill: next, line: next?.kind === "write-line" ? next.starter : "" });
       setDone(false);
       setPicked(null);
       setVerdict(null);
       setChecking(false);
+      setLastCorrect(null);
+    },
+    [practice],
+  );
+
+  // Serve the next "miss" drill (across all concepts). Exits review when none left.
+  const startReviewDrill = useCallback(
+    (excludeId?: string) => {
+      const pool = collectWrongDrills(practice).filter((d) => d.id !== excludeId);
+      if (pool.length === 0) {
+        setReview(false);
+        return;
+      }
+      const next = pool[Math.floor(Math.random() * pool.length)];
+      setReview(true);
+      setCurrent({ concept: next.concept, drill: next, line: next.kind === "write-line" ? next.starter : "" });
+      setDone(false);
+      setPicked(null);
+      setVerdict(null);
+      setChecking(false);
+      setLastCorrect(null);
     },
     [practice],
   );
@@ -84,12 +114,17 @@ export default function PracticePanel({
   const cp = practice[active];
   const masteryPct = Math.round(practiceMastery(practice, active) * 100);
   const streak = cp?.streak ?? 0;
+  const missCount = collectWrongDrills(practice).length;
+  // Targeted feedback for a wrong predict pick: the note for that exact choice.
+  const wrongPredictNote =
+    lastCorrect === false && drill.kind === "predict" && picked != null ? drill.choiceNotes?.[picked] ?? null : null;
 
   const answerPredict = (d: PredictDrill, idx: number) => {
     if (done) return;
     const ok = checkPredict(d, idx);
     setPicked(idx);
     setDone(true);
+    setLastCorrect(ok);
     onResult(d, ok);
   };
 
@@ -99,6 +134,7 @@ export default function PracticePanel({
       const run = await runWriteLine(d, line);
       const v = evaluateWriteLine(d, run);
       setVerdict(v);
+      setLastCorrect(v.pass);
       onResult(d, v.pass);
       if (v.pass) setDone(true);
     } catch {
@@ -110,6 +146,22 @@ export default function PracticePanel({
 
   return (
     <div className="panel practice">
+      {/* review-misses mode: re-drill exactly what you got wrong, until cleared */}
+      {review ? (
+        <div className="drill-review-bar" role="status">
+          <span>
+            Reviewing your misses — <b>{missCount}</b> left
+          </span>
+          <button className="btn ghost" onClick={() => startDrill(concepts[0] ?? active)}>
+            done
+          </button>
+        </div>
+      ) : missCount > 0 ? (
+        <button className="drill-review-cta" onClick={() => startReviewDrill()}>
+          ↻ Review my misses ({missCount})
+        </button>
+      ) : null}
+
       {/* concept switcher */}
       <div className="drill-concepts">
         {concepts.map((c) => {
@@ -165,11 +217,21 @@ export default function PracticePanel({
         )}
 
         {done ? (
-          <motion.div className="drill-explain" variants={popIn} initial="hidden" animate="show">
-            <span className="drill-explain-mark">✓ nice</span>
-            <p>{drill.explain}</p>
-            <motion.button className="btn ghost" {...pressable} onClick={() => startDrill(active, drill.id)}>
-              Next drill →
+          <motion.div
+            className={`drill-explain${lastCorrect === false ? " incorrect" : ""}`}
+            variants={popIn}
+            initial="hidden"
+            animate="show"
+          >
+            <span className="drill-explain-mark">{lastCorrect === false ? "✕ not quite" : "✓ correct"}</span>
+            {wrongPredictNote ? <p className="drill-explain-note">{wrongPredictNote}</p> : null}
+            <p className={wrongPredictNote ? "drill-explain-general" : undefined}>{drill.explain}</p>
+            <motion.button
+              className="btn ghost"
+              {...pressable}
+              onClick={() => (review ? startReviewDrill(drill.id) : startDrill(active, drill.id))}
+            >
+              {lastCorrect === false ? "Try another →" : review ? "Next miss →" : "Next drill →"}
             </motion.button>
           </motion.div>
         ) : null}

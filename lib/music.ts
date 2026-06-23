@@ -1,7 +1,8 @@
-// File-based background soundtrack — rotates the supplied tracks Minecraft-style:
-// a shuffled queue (no immediate repeat), each track played in full, then a random
-// silent gap before the next. Uses a single HTMLAudioElement. Audio only starts on
-// a user gesture (browsers block autoplay); setOn(true) is expected from a click.
+// File-based background soundtrack — plays the tracks in random order, each in
+// full, then a random silent gap before the next. A track that just played is
+// blocked until NO_REPEAT_WINDOW (10) other tracks have played, so nothing recurs
+// for a long stretch. Uses a single HTMLAudioElement. Audio only starts on a user
+// gesture (browsers block autoplay); setOn(true) is expected from a click.
 
 export interface MusicHandle {
   setOn(on: boolean): void;
@@ -11,6 +12,7 @@ export interface MusicHandle {
 
 // served from public/music (see public/music/*.mp3)
 const TRACKS = [
+  // original 10
   "Steps_Through_the_Grove",
   "Rapid_Growth",
   "Dusk_on_the_Porch",
@@ -21,18 +23,34 @@ const TRACKS = [
   "Morning_on_the_Unbroken_Soil",
   "Midnight_at_the_Weathered_Barn",
   "Midnight_at_the_Farmhouse",
+  // added 11
+  "The_Silent_Ascent",
+  "Mountains_at_First_Light",
+  "Before_the_Snow_Settles",
+  "Beyond_The_Silver_Ridge",
+  "The_Last_Gate_of_the_Valley",
+  "Before_The_Leaves_Fall",
+  "The_Waltz_of_Departures",
+  "A_Sovereign_Mourning",
+  "The_Final_Gallop",
+  "Crown_of_the_Ancient_Peak",
+  "Statues_in_the_Rising_Tide",
 ].map((name) => `/music/${name}.mp3`);
 
 const VOLUME = 0.5;
 const GAP_MIN_MS = 30_000; // silent gap between tracks (Minecraft-style)
 const GAP_MAX_MS = 90_000;
+// A track that just played can't return until this many OTHER tracks have played.
+// Must stay below TRACKS.length so there's always at least one eligible track.
+const NO_REPEAT_WINDOW = 10;
 
 export function createMusic(): MusicHandle {
   let audio: HTMLAudioElement | null = null;
   let on = false;
   let gapTimer: ReturnType<typeof setTimeout> | null = null;
-  let queue: string[] = [];
-  let lastTrack: string | null = null;
+  // The most recently played tracks (newest last), capped at NO_REPEAT_WINDOW.
+  // The next track is chosen at random from everything NOT in this window.
+  const recent: string[] = [];
 
   const clearGap = () => {
     if (gapTimer) {
@@ -41,22 +59,17 @@ export function createMusic(): MusicHandle {
     }
   };
 
-  // Fisher–Yates shuffle, then ensure the first track isn't the one just played.
-  const reshuffle = () => {
-    queue = [...TRACKS];
-    for (let i = queue.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [queue[i], queue[j]] = [queue[j], queue[i]];
-    }
-    if (queue.length > 1 && queue[0] === lastTrack) {
-      [queue[0], queue[1]] = [queue[1], queue[0]];
-    }
-  };
-
+  // Pick a uniformly random track that hasn't played within the last
+  // NO_REPEAT_WINDOW tracks, then record it in the window. With 21 tracks and a
+  // window of 10 there are always >= 11 eligible, so a just-played track waits out
+  // 10 others before it can return.
   const nextTrack = (): string => {
-    if (queue.length === 0) reshuffle();
-    const track = queue.shift() as string;
-    lastTrack = track;
+    const blocked = new Set(recent);
+    let pool = TRACKS.filter((track) => !blocked.has(track));
+    if (pool.length === 0) pool = TRACKS; // safety net if the window ever >= track count
+    const track = pool[Math.floor(Math.random() * pool.length)];
+    recent.push(track);
+    if (recent.length > NO_REPEAT_WINDOW) recent.shift();
     return track;
   };
 

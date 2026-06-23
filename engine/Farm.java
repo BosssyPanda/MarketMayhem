@@ -19,6 +19,14 @@ public class Farm {
     private int pricesReadCount = 0;
     private int cropsReadCount = 0;
     private int moistureReadCount = 0;
+    // An EDITABLE workbench array (unlike prices/crops/moisture, which hand back
+    // read-only copies). signal() returns the backing array itself, so the player
+    // can modify it in place (a[i] = ...). Reset per objective via setSignal.
+    private int[] signal = new int[0];
+    private int signalReadCount = 0;
+    // A 2D grid for the 2D-array objective (read-only copy, like prices/moisture).
+    private int[][] grid = new int[0][];
+    private int gridReadCount = 0;
 
     public Farm(int width, int height) {
         this.width = width;
@@ -71,6 +79,24 @@ public class Farm {
         return copy;
     }
 
+    /** The editable workbench array. Returns the BACKING array, so writing
+     *  signal()[i] = x changes it in place (used by array-modification objectives). */
+    public int[] signal() {
+        signalReadCount++;
+        return signal;
+    }
+
+    /** A 2D grid of values; returns a copy. Used by the 2D-array objective. */
+    public int[][] grid() {
+        gridReadCount++;
+        int[][] copy = new int[grid.length][];
+        for (int r = 0; r < grid.length; r++) {
+            copy[r] = new int[grid[r].length];
+            for (int c = 0; c < grid[r].length; c++) copy[r][c] = grid[r][c];
+        }
+        return copy;
+    }
+
     // ===== Engine-internal =====
 
     public boolean isInside(int x, int y) {
@@ -83,6 +109,27 @@ public class Farm {
     public int pricesReadCount() { return pricesReadCount; }
     public int cropsReadCount() { return cropsReadCount; }
     public int moistureReadCount() { return moistureReadCount; }
+    public int signalReadCount() { return signalReadCount; }
+
+    /** Seed the editable workbench array for an objective. */
+    public void setSignal(int[] values) {
+        signal = new int[values.length];
+        for (int i = 0; i < values.length; i++) signal[i] = values[i];
+    }
+
+    /** Engine-internal: read the (possibly player-modified) workbench array for checks. */
+    public int[] signalArray() { return signal; }
+
+    public int gridReadCount() { return gridReadCount; }
+
+    /** Seed the 2D grid for an objective. */
+    public void setGrid(int[][] values) {
+        grid = new int[values.length][];
+        for (int r = 0; r < values.length; r++) {
+            grid[r] = new int[values[r].length];
+            for (int c = 0; c < values[r].length; c++) grid[r][c] = values[r][c];
+        }
+    }
 
     public boolean isRipe(int x, int y) {
         Crop c = crop[y][x];

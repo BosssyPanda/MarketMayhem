@@ -37,6 +37,8 @@ export interface Frame {
   drone: DroneState;
   watch?: Record<string, number | boolean | string>;
   resources?: Record<string, number>;
+  /** Line in the full Strategy.java that triggered this action (1-based). */
+  line?: number;
 }
 
 export interface CheckResult {
@@ -157,5 +159,20 @@ export const FALLBACK_OBJECTIVE: ObjectiveInfo = {
 
 export const FALLBACK_CATALOG: ObjectiveCatalog = {
   objectives: [FALLBACK_OBJECTIVE],
-  conceptOrder: ["methods", "for-loops", "arrays", "while-loops", "sequential-search", "binary-search", "bubble-sort", "selection-sort"],
+  conceptOrder: [
+    "methods",
+    "variables-types",
+    "modulo-division",
+    "comparison-operators",
+    "if-else",
+    "for-loops",
+    "nested-loops",
+    "while-loops",
+    "arrays",
+    "static-methods",
+    "sequential-search",
+    "binary-search",
+    "bubble-sort",
+    "selection-sort",
+  ],
 };

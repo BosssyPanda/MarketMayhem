@@ -476,6 +476,17 @@ h2,
   background: var(--titlebar);
 }
 
+/* Monaco whole-line decoration: the line the panda is currently running. */
+.editor-run-line {
+  background: rgba(224, 150, 46, 0.16);
+}
+
+.editor-run-gutter {
+  background: var(--accent);
+  width: 3px !important;
+  margin-left: 2px;
+}
+
 .editor-shell .monaco-editor,
 .editor-shell .overflow-guard {
   border-radius: 0;
@@ -1609,6 +1620,59 @@ h2,
   letter-spacing: 0.08em;
   color: var(--ok);
   margin-bottom: 4px;
+}
+
+/* Wrong answer: the explanation still shows (it teaches), but the mark reads red. */
+.drill-explain.incorrect .drill-explain-mark {
+  color: var(--error);
+}
+
+/* Targeted "why this specific choice is tempting" note, shown above the general explanation. */
+.drill-explain-note {
+  margin: 0 0 8px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+.drill-explain-general {
+  margin: 0 0 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+/* Review-my-misses entry point + active banner. */
+.drill-review-cta {
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px dashed var(--border);
+  background: transparent;
+  color: var(--ink-dim);
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: color 120ms ease, border-color 120ms ease;
+}
+
+.drill-review-cta:hover {
+  color: var(--ink);
+  border-color: var(--accent);
+}
+
+.drill-review-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding: 7px 11px;
+  border-radius: 8px;
+  background: rgba(224, 101, 60, 0.1);
+  border: 1px solid rgba(224, 101, 60, 0.35);
+  font-size: 12.5px;
+  color: var(--ink-dim);
 }
 
 .drill-explain p {

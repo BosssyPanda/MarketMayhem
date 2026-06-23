@@ -134,10 +134,23 @@ public class Drone {
         farm.advanceTick(cost);
     }
 
+    // Find the line in the player's Strategy.java that triggered this action, so
+    // the editor can highlight the code currently running. Additive: omitted when
+    // no Strategy frame is on the stack.
+    private int strategyLine() {
+        StackTraceElement[] st = Thread.currentThread().getStackTrace();
+        for (int i = 0; i < st.length; i++) {
+            if ("Strategy".equals(st[i].getClassName())) return st[i].getLineNumber();
+        }
+        return -1;
+    }
+
     private void emit(String actionJson) {
         StringBuilder sb = new StringBuilder();
         sb.append("{\"tick\":").append(farm.tick());
         sb.append(",\"action\":").append(actionJson);
+        int line = strategyLine();
+        if (line > 0) sb.append(",\"line\":").append(line);
         sb.append(",\"drone\":{\"x\":").append(x)
           .append(",\"y\":").append(y)
           .append(",\"carrying\":").append(Json.str(carrying.name())).append("}");

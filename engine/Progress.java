@@ -5,9 +5,15 @@ import java.util.Map;
 public class Progress {
     public static final String[] CORE_CONCEPTS = new String[] {
         "methods",
+        "variables-types",
+        "modulo-division",
+        "comparison-operators",
+        "if-else",
         "for-loops",
-        "arrays",
+        "nested-loops",
         "while-loops",
+        "arrays",
+        "static-methods",
         "sequential-search",
         "binary-search",
         "bubble-sort",

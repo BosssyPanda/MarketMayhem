@@ -1,9 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { motion } from "motion/react";
-import PixelFarm from "@/components/PixelFarm";
 import type { DerivedState } from "@/lib/animate";
 import { hudTick } from "@/lib/motion";
 import type { FarmState } from "@/lib/types";
@@ -20,21 +18,10 @@ function phaseLabel(state: DerivedState): string {
   return "working";
 }
 
-function canRender3D(): boolean {
-  if (typeof window === "undefined") return false;
-  try {
-    const c = document.createElement("canvas");
-    return !!(c.getContext("webgl2") || c.getContext("webgl"));
-  } catch {
-    return false;
-  }
-}
-
 // Full-bleed farm: a fixed background layer the floating windows sit on top of.
-// Renders the 3D floating-island scene whenever WebGL is available, falling back
-// to the crisp 2D canvas only when the browser cannot create a WebGL renderer.
-// Starts on the 2D path so server and first client render match, then upgrades
-// after mount.
+// The 3D floating-island scene is rendered on every machine (no 2D fallback) so
+// the public deployment looks the same everywhere; if a browser truly cannot
+// start WebGL the canvas stays empty and the CSS sky gradient shows through.
 export default function FarmView({
   width,
   height,
@@ -48,38 +35,12 @@ export default function FarmView({
   state: DerivedState;
   running?: boolean;
 }) {
-  const [use3D, setUse3D] = useState(false);
-  const [failed, setFailed] = useState(false);
-  const backdropRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    const frame = window.requestAnimationFrame(() => setUse3D(canRender3D()));
-    return () => window.cancelAnimationFrame(frame);
-  }, []);
-
-  // Ready/error handshake: the island calls onReady once it has rendered a frame,
-  // and onError only when WebGL itself cannot start. Slow chunk startup should not
-  // permanently downgrade the public build to the simpler canvas view.
-  const handleReady = useCallback(() => undefined, []);
-  const handleError = useCallback(() => setFailed(true), []);
-
   const harvested = Object.values(state.resources).reduce((sum, n) => sum + (Number(n) || 0), 0);
   const label = phaseLabel(state);
 
   return (
-    <div className="farm-backdrop" ref={backdropRef}>
-      {use3D && !failed ? (
-        <IslandFarm
-          state={state}
-          playWidth={width}
-          playHeight={height}
-          running={running}
-          onReady={handleReady}
-          onError={handleError}
-        />
-      ) : (
-        <PixelFarm width={width} height={height} state={state} farmState={farmState} running={running} />
-      )}
+    <div className="farm-backdrop">
+      <IslandFarm state={state} playWidth={width} playHeight={height} running={running} />
 
       <div className="hud left">
         {farmState.width} &times; {farmState.height} plots

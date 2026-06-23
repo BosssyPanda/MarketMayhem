@@ -16,8 +16,9 @@ import PracticePanel from "@/components/PracticePanel";
 import ResourceBar from "@/components/ResourceBar";
 import Toolbar from "@/components/Toolbar";
 import { deriveState } from "@/lib/animate";
-import { allDrillConcepts, hasDrills, recordDrillResult, type Drill } from "@/lib/drills";
+import { hasDrills, learningLadder, recordDrillResult, type Drill } from "@/lib/drills";
 import { DURATION, EASE } from "@/lib/motion";
+import { primeSfx, sfxComplete, sfxHarvest, sfxPlant } from "@/lib/sfx";
 import {
   buildStrategySource,
   clearAllStrategyCode,
@@ -43,7 +44,7 @@ import type { LayoutState, PracticeState } from "@/lib/persist";
 import { FALLBACK_CATALOG } from "@/lib/types";
 import type { FarmState, Frame, ObjectiveCatalog, ObjectiveInfo, RunResponse } from "@/lib/types";
 
-const PLAYBACK_MS = 450;
+const PLAYBACK_MS = 150;
 const EMPTY_FRAMES: Frame[] = [];
 
 // Windows start tidy in two side rails; the ⤢ button pops any one out to a
@@ -92,6 +93,9 @@ export default function Page() {
   const [index, setIndex] = useState(-1);
   const [running, setRunning] = useState(false);
   const [playing, setPlaying] = useState(false);
+  // Bumped once per run that has frames; the playback effect keys off this so it
+  // starts exactly once per run (no frames/playback dep churn → no dropped runs).
+  const [playbackSeq, setPlaybackSeq] = useState(0);
   const [celebration, setCelebration] = useState<{ key: number; title: string; subtitle?: string } | null>(null);
   const [showInfo, setShowInfo] = useState(true);
   const [musicOn, setMusicOn] = useState(false);
@@ -108,6 +112,7 @@ export default function Page() {
     };
   });
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const playbackRef = useRef<PlaybackRun | null>(null);
 
   const stopTimer = useCallback(() => {
     if (timer.current) {
@@ -216,19 +221,22 @@ export default function Page() {
   const frames = playback?.response.frames ?? EMPTY_FRAMES;
   const renderFarmState = playback?.baseFarmState ?? farmState;
   const state = useMemo(() => deriveState(renderFarmState, frames, index), [renderFarmState, frames, index]);
+  // While a run plays back, glow the Strategy line the panda is executing. The
+  // engine reports the line in the full wrapped source; the editor shows the
+  // class body, so shift up by the one wrapper line.
+  const activeFrameLine = index >= 0 && index < frames.length ? frames[index]?.line : undefined;
+  const highlightLine = playing && activeFrameLine ? Math.max(1, activeFrameLine - 1) : undefined;
   useEffect(() => {
     if (storageReady) saveFarmState(farmState);
   }, [farmState, storageReady]);
 
-  // Concepts the learner has reached (up to the current objective) that have
-  // drills — the practice hub offers these.
+  // Beginner-first practice ladder: the whole curriculum (variables → … → sort)
+  // is browsable from the very start, not gated behind engine-core progress, so
+  // a total beginner can begin at the absolute beginning and ramp up.
   const reachedConcepts = useMemo(() => {
-    const order = catalog.conceptOrder;
-    const idx = order.indexOf(objective.concept);
-    const upto = idx >= 0 ? order.slice(0, idx + 1) : order;
-    const list = upto.filter(hasDrills);
-    return list.length ? list : allDrillConcepts();
-  }, [catalog.conceptOrder, objective.concept]);
+    const ladder = learningLadder();
+    return ladder.length ? ladder : [objective.concept];
+  }, [objective.concept]);
 
   // A concept the engine flagged for recap (repeated failures) that we can drill.
   const recapConcept = useMemo(() => {
@@ -253,6 +261,7 @@ export default function Page() {
   const fireCelebration = useCallback((response: RunResponse) => {
     if (!response.objective?.passed) return;
     celebrateSeq.current += 1;
+    sfxComplete();
     const unlocks = response.newlyUnlocked ?? [];
     setCelebration({
       key: celebrateSeq.current,
@@ -268,9 +277,11 @@ export default function Page() {
 
   const runCode = useCallback(async () => {
     const submittedFarmState = farmState;
+    primeSfx(); // start the audio context within the click gesture
     setRunning(true);
     stopTimer();
     setPlayback(null);
+    playbackRef.current = null;
     setResult(null);
     setIndex(-1);
     setPlaying(false);
@@ -286,14 +297,19 @@ export default function Page() {
       const normalizedResult: RunResponse = { ...data, newlyUnlocked: runNewlyUnlocked };
       const canCommit = isValidRunStateTransition(normalizedResult);
 
+      const pb: PlaybackRun = { response: normalizedResult, baseFarmState: submittedFarmState, canCommit };
       setResult(normalizedResult);
-      setPlayback({ response: normalizedResult, baseFarmState: submittedFarmState, canCommit });
+      setPlayback(pb);
 
       if (normalizedResult.frames.length > 0) {
+        playbackRef.current = pb;
+        setIndex(-1);
         setPlaying(true);
+        setPlaybackSeq((s) => s + 1); // kick off the playback effect exactly once
       } else {
         setFarmState((current) => resolveCommittedFarmStateAfterPlayback(current, normalizedResult, canCommit));
         setPlayback(null);
+        playbackRef.current = null;
         fireCelebration(normalizedResult); // no animation to wait for → fire now
       }
     } catch (error) {
@@ -319,28 +335,38 @@ export default function Page() {
     }
   }, [code, farmState, stopTimer, fireCelebration]);
 
+  // Playback runs exactly once per run (keyed on playbackSeq). A local counter
+  // drives the index so the setIndex updater stays pure, and the end-of-run
+  // commit happens once, outside the updater — no dropped/frozen runs.
   useEffect(() => {
-    if (!playing) return;
+    if (playbackSeq === 0) return;
+    const pb = playbackRef.current;
+    if (!pb) return;
+    const playbackFrames = pb.response.frames;
+    if (playbackFrames.length === 0) return;
 
+    let i = -1;
+    stopTimer();
     timer.current = setInterval(() => {
-      setIndex((current) => {
-        const next = Math.min(current + 1, frames.length - 1);
-        if (next >= frames.length - 1) {
-          setPlaying(false);
-          if (playback) {
-            setFarmState((currentFarmState) =>
-              resolveCommittedFarmStateAfterPlayback(currentFarmState, playback.response, playback.canCommit),
-            );
-            fireCelebration(playback.response); // after the final frame has played
-            setPlayback(null);
-          }
-        }
-        return next;
-      });
+      i += 1;
+      const act = playbackFrames[i]?.action;
+      if (act?.type === "harvest") sfxHarvest();
+      else if (act?.type === "plant") sfxPlant();
+      setIndex(i);
+      if (i >= playbackFrames.length - 1) {
+        stopTimer();
+        setPlaying(false);
+        setFarmState((currentFarmState) =>
+          resolveCommittedFarmStateAfterPlayback(currentFarmState, pb.response, pb.canCommit),
+        );
+        fireCelebration(pb.response); // once, after the final frame has played
+        setPlayback(null);
+        playbackRef.current = null;
+      }
     }, PLAYBACK_MS);
 
     return () => stopTimer();
-  }, [frames.length, playback, playing, stopTimer, fireCelebration]);
+  }, [playbackSeq, stopTimer, fireCelebration]);
 
   const handleCodeChange = useCallback(
     (next: string) => {
@@ -354,6 +380,7 @@ export default function Page() {
     stopTimer();
     setResult(null);
     setPlayback(null);
+    playbackRef.current = null;
     setIndex(-1);
     setPlaying(false);
   }, [stopTimer]);
@@ -554,7 +581,7 @@ export default function Page() {
             onRun={runCode}
             runningPill={runPill}
           >
-            <Editor value={code} onChange={handleCodeChange} />
+            <Editor value={code} onChange={handleCodeChange} highlightLine={highlightLine} />
             <div className="gwin-pad">
               <Controls
                 onRun={runCode}

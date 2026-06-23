@@ -44,9 +44,15 @@ export interface ConceptMeta {
 
 export const CORE_CONCEPT_META: Record<string, ConceptMeta> = {
   methods: { isCore: true },
+  "variables-types": { isCore: true },
+  "modulo-division": { isCore: true },
+  "comparison-operators": { isCore: true },
+  "if-else": { isCore: true },
   "for-loops": { isCore: true },
-  arrays: { isCore: true },
+  "nested-loops": { isCore: true },
   "while-loops": { isCore: true },
+  arrays: { isCore: true },
+  "static-methods": { isCore: true },
   "sequential-search": { isCore: true },
   "binary-search": { isCore: true },
   "bubble-sort": { isCore: true },
@@ -54,17 +60,9 @@ export const CORE_CONCEPT_META: Record<string, ConceptMeta> = {
   "recursion-puzzles": { isCore: false },
 };
 
-// Sub-topics woven through the cores. Listed on the roadmap and linked from
-// each core's "related" chips so nothing the player needs goes untaught.
-export const WOVEN_CONCEPTS = [
-  "variables-types",
-  "comparison-operators",
-  "if-else",
-  "nested-loops",
-  "2d-arrays",
-  "modulo-division",
-  "string-methods",
-] as const;
+// Sub-topics woven through the cores (taught via lessons + drills, not their own
+// objective track). Listed on the roadmap's "woven throughout" row.
+export const WOVEN_CONCEPTS = ["2d-arrays", "string-methods"] as const;
 
 const LESSONS: Record<string, ConceptLesson> = {
   // ---------------------------------------------------------------- CORE: methods
@@ -468,6 +466,32 @@ const LESSONS: Record<string, ConceptLesson> = {
       "Case sensitivity: \"Wheat\".equals(\"WHEAT\") is false.",
     ],
     related: ["sequential-search", "comparison-operators"],
+  },
+
+  // ============================================================ CORE: static-methods
+  "static-methods": {
+    concept: "static-methods",
+    title: "Writing your own methods",
+    summary: "Bundle a reusable calculation behind a name, with inputs and a return value.",
+    explanation: [
+      "Earlier you CALLED methods the drone gave you. Now you WRITE your own. A method packages a piece of work behind a name; you give it inputs (parameters) and it can hand back one value with return.",
+      "The header names the return type, the method name, and the parameters: int doubleIt(int x). Call it like any other method: int y = doubleIt(5);",
+      "Methods keep code short and reusable — write the logic once, call it as often as you like, even inside a loop.",
+    ],
+    syntax: "int doubleIt(int x) {\n    return x * 2;   // hand a value back\n}\n// ...\nint y = doubleIt(5);   // y is 10",
+    walkthrough: [
+      { code: "int area(int w, int h) {", note: "Header: returns an int, takes two int parameters w and h." },
+      { code: "    return w * h;", note: "return computes the answer and hands it back to the caller." },
+      { code: "}", note: "End of the method body." },
+      { code: "int a = area(4, 3);", note: "Call it with arguments 4 and 3; a becomes 12." },
+    ],
+    gameMapping: "Write a helper once — like fullBaskets(count) or isRipe(growth) — then reuse it across the farm instead of repeating the logic.",
+    commonMistakes: [
+      "Forgetting return, so the method gives nothing back (or won't compile).",
+      "Return type mismatch — declaring int but returning a decimal.",
+      "Calling with the wrong number or order of arguments.",
+    ],
+    related: ["methods", "variables-types"],
   },
 };
 

@@ -67,7 +67,35 @@ describe("encodeFarmState", () => {
         { x: 2, y: 1, crop: "PUMPKIN", plantedTick: 10, ripe: true, moisture: 80 },
       ],
       resources: { PUMPKIN: 7 },
-      unlocked: ["basic-planting", "bigger-field", "market-stall", "irrigation", "crop-locator"],
+      // The full contiguous unlock chain (in ladder order) that legitimately
+      // reaches fast-market, the 18th objective.
+      unlocked: [
+        "basic-planting",
+        "sensor-readout",
+        "basket-packer",
+        "valve-cycle",
+        "code-decoder",
+        "ripeness-scanner",
+        "smart-irrigation",
+        "moisture-classifier",
+        "auto-grader",
+        "bigger-field",
+        "sensor-sweep",
+        "field-map",
+        "nursery-grid",
+        "irrigation",
+        "digit-counter",
+        "market-stall",
+        "harvest-report",
+        "charge-monitor",
+        "improvement-tracker",
+        "signal-limiter",
+        "token-conveyor",
+        "pack-helper",
+        "ripeness-helper",
+        "yield-engine",
+        "crop-locator",
+      ],
       concepts: {
         arrays: { correctStreak: 2, mastered: true, failCount: 3, recapDue: false },
       },
@@ -79,7 +107,9 @@ describe("encodeFarmState", () => {
     expect(encoded).toContain("tick=42");
     expect(encoded).toContain("PUMPKIN:10:80");
     expect(encoded).toContain("PUMPKIN:7");
-    expect(encoded).toContain("unlocked=basic-planting,bigger-field,market-stall,irrigation,crop-locator");
+    expect(encoded).toContain(
+      "unlocked=basic-planting,sensor-readout,basket-packer,valve-cycle,code-decoder,ripeness-scanner,smart-irrigation,moisture-classifier,auto-grader,bigger-field,sensor-sweep,field-map,nursery-grid,irrigation,digit-counter,market-stall,harvest-report,charge-monitor,improvement-tracker,signal-limiter,token-conveyor,pack-helper,ripeness-helper,yield-engine,crop-locator",
+    );
     expect(encoded).toContain("arrays:2:3:false:true");
   });
 

@@ -62,7 +62,15 @@ export default function IslandFarm({
     // jsdom / no-WebGL guard so the health-check in FarmView can fall back cleanly.
     let renderer: THREE.WebGLRenderer;
     try {
-      renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+      // Permissive context so weaker / integrated GPUs and software renderers
+      // still get a WebGL context (otherwise the farm would be blank). We force
+      // the 3D island on every machine, so getting *a* context matters most.
+      renderer = new THREE.WebGLRenderer({
+        canvas,
+        antialias: true,
+        powerPreference: "high-performance",
+        failIfMajorPerformanceCaveat: false,
+      });
     } catch {
       cbRef.current.onError?.();
       return;
@@ -541,9 +549,8 @@ export default function IslandFarm({
     }
     const cropSlots: (CropSlot | null)[] = new Array(COLS * ROWS).fill(null);
     const slotIndex = (ic: number, ir: number) => ir * COLS + ic;
-    const STAGE = 300; // seconds per growth stage (5 min)
-    const GROW = STAGE * 3; // seed → ripe = 15 min
-    const CUT = 1.0; // quick visible harvest cut before the slow regrow
+    const GROW = 2; // seed → ripe in 2 seconds (all three stages, ~0.67s each)
+    const CUT = 0.3; // quick visible harvest cut before the fast regrow
     const GREEN = new THREE.Color(0x5f8f33);
     const seedMat = new THREE.MeshStandardMaterial({ color: 0x6fae3c, roughness: 1, metalness: 0, flatShading: true });
     const seedGeo = new THREE.ConeGeometry(0.05, 0.16, 5);
@@ -1134,12 +1141,32 @@ export default function IslandFarm({
 
     let raf = 0;
     let readyFired = false;
+    // Adaptive quality: sample FPS for the first ~1.5s; if the GPU is struggling,
+    // drop the two heaviest post-FX passes + the pixel ratio so weak machines
+    // stay smooth (strong machines keep the full chain).
+    let prevRunning = false;
+    let fpsAccum = 0;
+    let fpsFrames = 0;
+    let perfChecked = false;
     function tick() {
       const d = dataRef.current;
       const animate = !d.reduced;
       const st = d.state;
       const dt = Math.min(clock.getDelta(), 0.05);
       const t = clock.elapsedTime;
+      if (!perfChecked) {
+        fpsAccum += dt;
+        fpsFrames++;
+        if (fpsAccum >= 1.5) {
+          perfChecked = true;
+          if (fpsFrames / fpsAccum < 45) {
+            if (gtao) gtao.enabled = false;
+            if (godrays) godrays.enabled = false;
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.3));
+            resize();
+          }
+        }
+      }
       island.position.y = animate ? Math.sin(t * 0.7) * 0.18 : 0;
       setDayNight(animate ? (t / CYCLE + 0.28) % 1 : 0.32);
       stars.rotation.y = t * 0.006;
@@ -1180,6 +1207,9 @@ export default function IslandFarm({
       if (d.running) {
         const tw = tileWorld(cOff + st.drone.x, rOff + st.drone.y);
         pandaTarget.set(tw.x, 1.25 + (animate ? Math.sin(t * 2.4) * 0.08 : 0), tw.z);
+        // Run just started: snap onto the start tile so the FIRST harvest is on
+        // that tile (the corner), not whatever tile the panda was gliding past.
+        if (!prevRunning) panda.position.copy(pandaTarget);
         const dx = pandaTarget.x - panda.position.x;
         const dz = pandaTarget.z - panda.position.z;
         if (Math.hypot(dx, dz) > 0.02) pandaHeading = Math.atan2(dx, dz);
@@ -1219,19 +1249,21 @@ export default function IslandFarm({
           let isRipe = true;
           let pulseScale = 1;
           if (slot.actKind) {
-            // an action is animating on this tile — plays out over real minutes
+            // an action is animating on this tile — quick cut, then a 2s regrow
             slot.actT += dt;
             if (slot.actKind === "harvest" && slot.actT < CUT) {
               pulseScale = 1 - slot.actT / CUT; // quick cut — wheat picked up
             } else {
               const base = slot.actKind === "harvest" ? CUT : 0;
-              const p = clamp((slot.actT - base) / GROW, 0, 1); // seed → ripe over 15 min
+              const p = clamp((slot.actT - base) / GROW, 0, 1); // seed → ripe over 2s
               gp = p;
               isRipe = p >= 1;
               if (p >= 1) slot.actKind = null; // tween done → fall back to default
             }
-          } else {
-            // default: decorative ripe wheat (covered field); play tiles reflect real state
+          } else if (d.running) {
+            // during a run, play tiles reflect the live grow state (seed→ripe).
+            // At rest the field stays fully ripe (no stray seeds on load) — growth
+            // is only ~2s, so a persisted mid-growth tile would never sit idle.
             const gx = ic - cOff;
             const gy = ir - rOff;
             if (gx >= 0 && gx < d.playWidth && gy >= 0 && gy < d.playHeight) {
@@ -1366,6 +1398,7 @@ export default function IslandFarm({
         readyFired = true;
         cbRef.current.onReady?.();
       }
+      prevRunning = d.running;
       raf = requestAnimationFrame(tick);
     }
 
